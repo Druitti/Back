@@ -1,10 +1,10 @@
 package com.maisapires.todosimple.services;
 
-import com.maisapires.todosimple.models.User;
-import com.maisapires.todosimple.models.UserProfile;
-import com.maisapires.todosimple.repositories.UserProfileRepository;
-import com.maisapires.todosimple.repositories.UserRepository;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -12,8 +12,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-import java.util.List;
+import com.maisapires.todosimple.models.User;
+import com.maisapires.todosimple.models.UserProfile;
+import com.maisapires.todosimple.repositories.UserProfileRepository;
+import com.maisapires.todosimple.repositories.UserRepository;
+import com.maisapires.todosimple.security.UserSpringSecurity;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -62,12 +65,20 @@ public class UserService implements UserDetailsService {
 
     public void deleteUser(Long userId) {
         UserProfile userProfile = userProfileRepository.findByUserId(userId);
-        
+
         if (userProfile != null) {
             userProfileRepository.delete(userProfile);
         }
 
         userRepository.deleteById(userId);
+    }
+
+    public static UserSpringSecurity authenticated() {
+        try {
+            return (UserSpringSecurity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public void register(User user) {
@@ -86,18 +97,19 @@ public class UserService implements UserDetailsService {
         Optional<User> userOptional = userRepository.findById(id);
         return userOptional.orElse(null); // Retorna null se não encontrar
     }
+
     public User updateUser(Long id, User user) {
         Optional<User> existingUserOptional = userRepository.findById(id);
         if (!existingUserOptional.isPresent()) {
             throw new RuntimeException("Usuário não encontrado");
         }
-    
+
         User existingUser = existingUserOptional.get();
         existingUser.setUsername(user.getUsername());
         existingUser.setRole(user.getRole());
         existingUser.setPassword(user.getPassword()); // Atualize a senha conforme necessário
-    
+
         return userRepository.save(existingUser);
     }
-    
+
 }
